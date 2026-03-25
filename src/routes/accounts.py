@@ -144,12 +144,13 @@ async def reset_password_complete(
     payload: PasswordResetCompleteRequestSchema,
     db: AsyncSession = Depends(get_db),
 ):
+
     user = (await db.execute(
         select(UserModel).where(UserModel.email == payload.email)
     )).scalars().first()
 
-    if not user:
-        raise HTTPException(status_code=400, detail="Invalid email or token.")
+    if not user or not user.is_active:
+       raise HTTPException(status_code=400, detail="Invalid email or token.")
 
     token_record = (await db.execute(
         select(PasswordResetTokenModel).where(PasswordResetTokenModel.user_id == user.id)
@@ -224,6 +225,7 @@ async def refresh_access_token(
     db: AsyncSession = Depends(get_db),
     jwt_manager: JWTAuthManagerInterface = Depends(get_jwt_auth_manager),
 ):
+
     try:
         token_data = jwt_manager.decode_refresh_token(payload.refresh_token)
     except BaseSecurityError as e:
@@ -246,4 +248,5 @@ async def refresh_access_token(
         raise HTTPException(status_code=404, detail="User not found.")
 
     access_token = jwt_manager.create_access_token({"user_id": cast(int, user.id)})
+
     return TokenRefreshResponseSchema(access_token=access_token)
