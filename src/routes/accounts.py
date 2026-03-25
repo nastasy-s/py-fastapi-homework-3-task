@@ -150,7 +150,7 @@ async def reset_password_complete(
     )).scalars().first()
 
     if not user or not user.is_active:
-       raise HTTPException(status_code=400, detail="Invalid email or token.")
+        raise HTTPException(status_code=400, detail="Invalid email or token.")
 
     token_record = (await db.execute(
         select(PasswordResetTokenModel).where(PasswordResetTokenModel.user_id == user.id)
